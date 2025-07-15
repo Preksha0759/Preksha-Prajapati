@@ -1,0 +1,129 @@
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Send, Loader2, Bot } from 'lucide-react';
+import { aiHelper } from '@/ai/flows/ai-helper-flow';
+import { useToast } from '@/hooks/use-toast';
+
+type Message = {
+  role: 'user' | 'model';
+  content: string;
+};
+
+export default function ChatWidget() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: 'model',
+      content: "Hello! I'm your AI assistant for Eventra. How can I help you today?",
+    },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const result = await aiHelper({
+        history: messages,
+        question: input,
+      });
+      const modelMessage: Message = { role: 'model', content: result.answer };
+      setMessages((prev) => [...prev, modelMessage]);
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to get a response from the AI. Please try again.',
+      });
+      // remove the user message if the call fails
+      setMessages((prev) => prev.slice(0, prev.length - 1));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg group transition-all duration-300 hover:scale-110"
+          size="icon"
+        >
+          <span className="absolute inline-flex h-full w-full rounded-full bg-accent/70 opacity-0 transition-opacity duration-300 group-hover:animate-ping group-hover:opacity-100"></span>
+          <Bot className="h-6 w-6" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 mr-4 mb-2 p-0 border-none" side="top" align="end">
+        <div className="flex flex-col h-[28rem] rounded-lg border bg-card text-card-foreground shadow-sm">
+          <div className="p-4 border-b">
+            <h3 className="font-semibold">AI Assistant</h3>
+            <p className="text-sm text-muted-foreground">Ask me anything about Eventra</p>
+          </div>
+          <ScrollArea className="flex-1 p-4">
+            <div className="space-y-4">
+              {messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex items-start gap-3 ${
+                    msg.role === 'user' ? 'justify-end' : ''
+                  }`}
+                >
+                  {msg.role === 'model' && (
+                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                        <Bot className="h-5 w-5" />
+                    </div>
+                  )}
+                  <div
+                    className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                        <Bot className="h-5 w-5" />
+                    </div>
+                  <div className="bg-muted rounded-lg px-3 py-2 flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+          <div className="p-4 border-t">
+            <form onSubmit={handleSend} className="flex items-center gap-2">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a message..."
+                disabled={loading}
+              />
+              <Button type="submit" size="icon" disabled={loading}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
