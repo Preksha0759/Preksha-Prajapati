@@ -1,0 +1,83 @@
+
+'use client';
+
+import type { Event } from '@/lib/types';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { MapPin, Calendar, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+interface EventCardProps {
+  event: Event;
+}
+
+function getAIHint(tags: string[]): string {
+    if (tags.includes('Tech')) return 'technology abstract';
+    if (tags.includes('Business')) return 'business meeting';
+    if (tags.includes('Design')) return 'design abstract';
+    if (tags.includes('Music')) return 'music concert';
+    if (tags.includes('Books')) return 'books library';
+    if (tags.includes('Food')) return 'food festival';
+    if (tags.includes('Film')) return 'film festival';
+    if (tags.includes('Art')) return 'art gallery';
+    if (tags.includes('Finance')) return 'finance tech';
+    if (tags.includes('Marketing')) return 'marketing analytics';
+    if (tags.includes('Health')) return 'health wellness';
+    return 'event conference';
+}
+
+
+export default function EventCard({ event }: EventCardProps) {
+
+  const eventDate = new Date(event.date);
+  const eventEndDate = new Date(eventDate.getTime() + 2 * 60 * 60 * 1000); // Add 2 hours duration
+  
+  const formatDateForGoogle = (date: Date) => {
+    return date.toISOString().replace(/-|:|\.\d{3}/g, '');
+  };
+
+  const googleCalendarUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${formatDateForGoogle(eventDate)}/${formatDateForGoogle(eventEndDate)}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
+
+  return (
+    <Card className="overflow-hidden flex flex-col transition-all hover:shadow-lg hover:shadow-primary/20 hover:-translate-y-1 duration-300 group">
+      <CardHeader className="p-0 relative h-48 bg-muted flex items-center justify-center">
+        <Image 
+          src={event.imageUrl} 
+          alt={event.name} 
+          width={600}
+          height={400}
+          data-ai-hint={getAIHint(event.tags)}
+          className="transition-transform duration-300 group-hover:scale-105 h-full w-full object-cover"
+        />
+      </CardHeader>
+      <CardContent className="p-4 flex-grow">
+        <CardTitle className="text-xl mb-2">{event.name}</CardTitle>
+        <div className="text-muted-foreground space-y-2 text-sm">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <span>{eventDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <span>{event.location}</span>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+            {event.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+        </div>
+      </CardContent>
+      <CardFooter className="p-4">
+        <div className="flex w-full gap-2">
+            <Button className="w-full">Register</Button>
+            <Button variant="outline" asChild title="Add to Google Calendar">
+                <a href={googleCalendarUrl} target="_blank" rel="noopener noreferrer">
+                    <Plus className="h-4 w-4" />
+                    <span className="sr-only">Add to calendar</span>
+                </a>
+            </Button>
+        </div>
+      </CardFooter>
+    </Card>
+  );
+}
