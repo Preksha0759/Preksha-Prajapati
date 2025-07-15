@@ -1,0 +1,102 @@
+
+'use client';
+
+import { useAuth } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { LogOut, User as UserIcon, Menu, Rocket, Home, Calendar, PlusSquare, FileText, BrainCircuit } from 'lucide-react';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import Link from 'next/link';
+
+const navItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/dashboard/events', label: 'Events', icon: Calendar },
+  { href: '/dashboard/events/create', label: 'Create Event', icon: PlusSquare },
+  { href: '/dashboard/applications', label: 'My Applications', icon: FileText },
+  { href: '/dashboard/project-ideas', label: 'Project Ideas', icon: BrainCircuit },
+];
+
+export default function Header() {
+  const { user, signOut } = useAuth();
+
+  return (
+    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-card px-4">
+       <div className="flex items-center gap-4 md:hidden">
+         <Sheet>
+           <SheetTrigger asChild>
+             <Button variant="outline" size="icon">
+               <Menu className="h-6 w-6" />
+             </Button>
+           </SheetTrigger>
+           <SheetContent side="left" className="w-[300px] sm:w-[400px] p-4">
+             <div className="mb-8 flex items-center gap-2 group">
+               <Rocket className="h-8 w-8 text-primary transition-transform duration-300 group-hover:scale-110" />
+               <h1 className="font-headline text-2xl font-bold text-primary-foreground transition-colors group-hover:text-primary">Eventra</h1>
+             </div>
+             <nav className="flex flex-col gap-4">
+               {navItems.map((item) => (
+                 <Link
+                   key={item.label}
+                   href={item.href}
+                   className="flex items-center gap-3 rounded-lg p-2 text-lg font-semibold text-muted-foreground hover:bg-accent hover:text-primary-foreground"
+                 >
+                   <item.icon className="h-5 w-5" />
+                   {item.label}
+                 </Link>
+               ))}
+             </nav>
+           </SheetContent>
+         </Sheet>
+       </div>
+      {user && (
+         <div className="flex items-center gap-4 ml-auto">
+            <span className="hidden sm:inline-block font-creative text-xl text-muted-foreground transition-colors hover:text-primary-foreground">
+                Welcome, {user.displayName?.split(' ')[0] ?? 'User'}
+            </span>
+            <Link href="/dashboard" passHref>
+                <Button variant="ghost" size="icon" aria-label="Home" className="transition-transform hover:scale-110">
+                    <Home className="h-5 w-5" />
+                </Button>
+            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full transition-transform hover:scale-110">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={user.photoURL ?? ''} alt={user.displayName ?? 'User'} />
+                    <AvatarFallback>
+                      {user.displayName?.charAt(0).toUpperCase() ?? <UserIcon className="h-5 w-5"/>}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
+      )}
+    </header>
+  );
+}
